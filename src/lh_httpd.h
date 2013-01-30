@@ -12,4 +12,13 @@ int server_start(unsigned short port, const char* root_dir);
 void server_select();
 void server_stop();
 
-#endifs
+typedef void (*request_callback) (const char *param);
+
+//must call clear_callback to free all callback at the end.
+void register_callback(const char *path, request_callback cb);
+
+//unregister all callbacks and free memory.
+void clear_callback();
+
+
+#endif

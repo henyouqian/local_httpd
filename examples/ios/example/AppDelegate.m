@@ -7,8 +7,8 @@
 //
 
 #import "AppDelegate.h"
-
 #import "ViewController.h"
+#import "lh_httpd.h"
 
 @implementation AppDelegate
 
@@ -30,6 +30,9 @@
     }
     self.window.rootViewController = self.viewController;
     [self.window makeKeyAndVisible];
+    
+    NSString *webPath = [[[NSBundle mainBundle] resourcePath] stringByAppendingPathComponent:@"www"];
+    server_start(5555, [webPath UTF8String]);
     return YES;
 }
 
@@ -58,6 +61,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application
 {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
+    server_stop();
 }
 
 @end

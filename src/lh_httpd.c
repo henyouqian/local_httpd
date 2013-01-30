@@ -5,7 +5,7 @@
 //  Copyright (c) 2013 Li Wei. All rights reserved.
 //
 
-#include "lh_http.h"
+#include "lh_httpd.h"
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <unistd.h>
@@ -50,6 +50,22 @@ static void free_fd_state(struct fd_state *state) {
     if (state->pf)
         fclose(state->pf);
     free(state);
+}
+
+void urldecode(char *p) {
+    int i=0;
+    while(*(p+i)) {
+        if ((*p=*(p+i)) == '%') {
+            *p=*(p+i+1) >= 'A' ? ((*(p+i+1) & 0XDF) - 'A') + 10 : (*(p+i+1) - '0');
+            *p=(*p) * 16;
+            *p+=*(p+i+2) >= 'A' ? ((*(p+i+2) & 0XDF) - 'A') + 10 : (*(p+i+2) - '0');
+            i+=2;
+        } else if (*(p+i)=='+') {
+            *p=' ';  
+        }  
+        p++;  
+    }  
+    *p='\0';  
 }
 
 int server_start(unsigned short port, const char* root_dir) {
@@ -122,7 +138,7 @@ enum Status{
 
 int parseRequest(struct fd_state *state) {
     assert(state && state->read_buf);
-    const char *path = strchr(state->read_buf, '/');
+    char *path = strchr(state->read_buf, '/');
     if (path == NULL)
         return -1;
     
@@ -131,6 +147,7 @@ int parseRequest(struct fd_state *state) {
     if (space) {
         *space = 0;
     }
+    urldecode(path);
     char *question = strchr(path, '?');
     if (question) {
         *question = 0;
@@ -351,4 +368,77 @@ void server_select() {
 
 void server_stop() {
     _isRunning = 0;
+    close(_listener);
+    for (int i=0; i < FD_SETSIZE; ++i) {
+        if (_state[i]) {
+            free_fd_state(_state[i]);
+            _state[i] = NULL;
+            close(i);
+        }
+    }
+    clear_callback();
 }
+
+struct callback_elem {
+    struct callback_elem *next;
+    char *path;
+    request_callback callback;
+};
+
+struct callback_elem *alloc_callback_elem(const char *path, request_callback callback) {
+    assert(path && callback);
+    struct callback_elem *elem = malloc(sizeof(struct callback_elem));
+    elem->next = NULL;
+    size_t len = strlen(path) + 1;
+    elem->path = malloc(len);
+    strcpy(elem->path, path);
+    elem->callback = callback;
+    return elem;
+}
+
+void free_callback_elem(struct callback_elem *elem) {
+    assert(elem);
+    free(elem->path);
+    free(elem);
+}
+
+struct callback_elem *callback_head = NULL;
+
+void register_callback(const char *path, request_callback callback) {
+    assert(path && callback);
+    struct callback_elem *elem = alloc_callback_elem(path, callback);
+    if (callback_head)
+        elem->next = callback_head;
+    callback_head = elem;
+}
+
+void clear_callback() {
+    struct callback_elem *elem = callback_head;
+    struct callback_elem *next;
+    while (elem) {
+        next = elem->next;
+        free_callback_elem(elem);
+        elem = next;
+    }
+    callback_head = NULL;
+}
+
+bool call_callback(const char *path, const char *param) {
+    assert(path && param);
+    struct callback_elem *elem = callback_head;
+    while (elem) {
+        if (strcmp(path, elem->path) == 0) {
+            elem->callback(param);
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
+
+
+
+
+

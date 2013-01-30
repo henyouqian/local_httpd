@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+#import "lh_httpd.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -126,6 +127,8 @@ GLfloat gCubeVertexData[216] =
     view.drawableDepthFormat = GLKViewDrawableDepthFormat24;
     
     [self setupGL];
+    
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/BootswatchSuperhero.html"]]];
 }
 
 - (void)didReceiveMemoryWarning
@@ -217,6 +220,8 @@ GLfloat gCubeVertexData[216] =
     _modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
     
     _rotation += self.timeSinceLastUpdate * 0.5f;
+    
+    server_select();
 }
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect

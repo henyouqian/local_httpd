@@ -23,6 +23,9 @@
 		D0C67B8D16B869410015B890 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C67B8C16B869410015B890 /* ViewController.m */; };
 		D0C67B9016B869410015B890 /* ViewController_iPhone.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0C67B8E16B869410015B890 /* ViewController_iPhone.xib */; };
 		D0C67B9316B869410015B890 /* ViewController_iPad.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0C67B9116B869410015B890 /* ViewController_iPad.xib */; };
+		D0C67BA216B870350015B890 /* www in Resources */ = {isa = PBXBuildFile; fileRef = D0C67BA116B870350015B890 /* www */; };
+		D0C67BA316B8F5C70015B890 /* lh_httpd.c in Sources */ = {isa = PBXBuildFile; fileRef = D0C67B9F16B86FF80015B890 /* lh_httpd.c */; };
+		D0C67BA416B8F5C70015B890 /* lh_httpd.h in Sources */ = {isa = PBXBuildFile; fileRef = D0C67BA016B86FF80015B890 /* lh_httpd.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +50,9 @@
 		D0C67B8C16B869410015B890 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		D0C67B8F16B869410015B890 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPhone.xib; sourceTree = "<group>"; };
 		D0C67B9216B869410015B890 /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/ViewController_iPad.xib; sourceTree = "<group>"; };
+		D0C67B9F16B86FF80015B890 /* lh_httpd.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = lh_httpd.c; path = ../../../src/lh_httpd.c; sourceTree = "<group>"; };
+		D0C67BA016B86FF80015B890 /* lh_httpd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = lh_httpd.h; path = ../../../src/lh_httpd.h; sourceTree = "<group>"; };
+		D0C67BA116B870350015B890 /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../../www; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,6 +103,8 @@
 		D0C67B7516B869410015B890 /* example */ = {
 			isa = PBXGroup;
 			children = (
+				D0C67BA116B870350015B890 /* www */,
+				D0C67B9D16B86FE00015B890 /* httpd */,
 				D0C67B7E16B869410015B890 /* AppDelegate.h */,
 				D0C67B7F16B869410015B890 /* AppDelegate.m */,
 				D0C67B8716B869410015B890 /* Shader.fsh */,
@@ -122,6 +130,15 @@
 				D0C67B8516B869410015B890 /* Default-568h@2x.png */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		D0C67B9D16B86FE00015B890 /* httpd */ = {
+			isa = PBXGroup;
+			children = (
+				D0C67B9F16B86FF80015B890 /* lh_httpd.c */,
+				D0C67BA016B86FF80015B890 /* lh_httpd.h */,
+			);
+			name = httpd;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -183,6 +200,7 @@
 				D0C67B8A16B869410015B890 /* Shader.vsh in Resources */,
 				D0C67B9016B869410015B890 /* ViewController_iPhone.xib in Resources */,
 				D0C67B9316B869410015B890 /* ViewController_iPad.xib in Resources */,
+				D0C67BA216B870350015B890 /* www in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -193,6 +211,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0C67BA316B8F5C70015B890 /* lh_httpd.c in Sources */,
+				D0C67BA416B8F5C70015B890 /* lh_httpd.h in Sources */,
 				D0C67B7C16B869410015B890 /* main.m in Sources */,
 				D0C67B8016B869410015B890 /* AppDelegate.m in Sources */,
 				D0C67B8D16B869410015B890 /* ViewController.m in Sources */,
@@ -320,6 +340,7 @@
 				D0C67B9816B869410015B890 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
