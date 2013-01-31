@@ -112,6 +112,17 @@ GLfloat gCubeVertexData[216] =
     [super dealloc];
 }
 
+void onTest (const struct url_param *param, struct http_response_body *resb_body) {
+    bool err = false;
+    int xx = get_param_int32(param, "xx", &err);
+    float ff = get_param_float(param, "ff", &err);
+    const char *str = get_param_string(param, "str", &err);
+    if (!err)
+        printf("%d, %f, %s\n", xx, ff, str);
+    
+    append_to_response(resb_body, "{\"error\":0}");
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -128,7 +139,9 @@ GLfloat gCubeVertexData[216] =
     
     [self setupGL];
     
-    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/BootswatchSuperhero.html"]]];
+    //[webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/BootswatchSuperhero.html"]]];
+    
+    register_callback("/test", onTest);
 }
 
 - (void)didReceiveMemoryWarning
@@ -221,7 +234,7 @@ GLfloat gCubeVertexData[216] =
     
     _rotation += self.timeSinceLastUpdate * 0.5f;
     
-    server_select();
+    server_select(0);
 }
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect

@@ -16,7 +16,6 @@
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
-#include <stdbool.h>
 #include <time.h>
 
 #define FRAME_TIMEOUT (1/60.f)
@@ -24,6 +23,73 @@ static int _listener = 0;
 static struct fd_state *_state[FD_SETSIZE];
 static int _isRunning = 0;
 char _root_dir[512] = {0};
+
+struct url_param {
+    struct url_param *next;
+    const char *key;
+    const char *value;
+};
+
+struct http_response_body {
+    char buf[1024];
+    int len;
+};
+
+const char* get_param_string(const struct url_param *param, const char *key, bool *error) {
+    assert(key);
+    if (!param) {
+        if (error)
+            *error = true;
+        return NULL;
+    }
+    while (param) {
+        if (strcmp(key, param->key) == 0) {
+            return param->value;
+        }
+        param = param->next;
+    }
+    *error = true;
+    return NULL;
+}
+
+#define _get_param_value(type, func) \
+    const char* str = get_param_string(param, key, NULL); \
+    if (!str) { \
+        if (error) \
+            *error = true; \
+        return 0; \
+    } \
+    char* pEnd = NULL; \
+    type n = func; \
+    if ((*str != '\0' && *pEnd == '\0')) \
+        return n; \
+    if (error) \
+        *error = true; \
+    return 0;
+
+int32_t get_param_int32(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(int32_t, strtol(str, &pEnd, 0));
+}
+
+uint32_t get_param_uint32(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(uint32_t, strtoul(str, &pEnd, 0));
+}
+
+int64_t get_param_int64(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(int64_t, strtoll(str, &pEnd, 0));
+}
+
+uint64_t get_param_uint64(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(uint64_t, strtoull(str, &pEnd, 0));
+}
+
+float get_param_float(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(float, strtof(str, &pEnd));
+}
+
+double get_param_double(const struct url_param *param, const char *key, bool *error) {
+    _get_param_value(double, strtod(str, &pEnd));
+}
 
 struct fd_state {
     char read_buf[16384];
@@ -56,6 +122,8 @@ void urldecode(char *p) {
     int i=0;
     while(*(p+i)) {
         if ((*p=*(p+i)) == '%') {
+            if (*(p+i+1) == 0 || *(p+i+2) == 0)
+                break;
             *p=*(p+i+1) >= 'A' ? ((*(p+i+1) & 0XDF) - 'A') + 10 : (*(p+i+1) - '0');
             *p=(*p) * 16;
             *p+=*(p+i+2) >= 'A' ? ((*(p+i+2) & 0XDF) - 'A') + 10 : (*(p+i+2) - '0');
@@ -136,22 +204,67 @@ enum Status{
     s_disconnect,
 };
 
-int parseRequest(struct fd_state *state) {
+bool call_callback(struct fd_state *state, const char *path, const struct url_param *param);
+
+static void free_url_params(struct url_param* param){
+    while (param) {
+        struct url_param *next = param->next;
+        free(param);
+        param = next;
+    }
+}
+
+static int parseRequest(struct fd_state *state) {
     assert(state && state->read_buf);
     char *path = strchr(state->read_buf, '/');
     if (path == NULL)
         return -1;
     
-    const char *param = NULL;
     char *space = strchr(path, ' ');
     if (space) {
         *space = 0;
     }
-    urldecode(path);
     char *question = strchr(path, '?');
-    if (question) {
+    if (question)
         *question = 0;
-        param = question + 1;
+    urldecode(path);
+    
+    char *sparam = NULL;
+    struct url_param *param = NULL;
+    if (question) {
+        sparam = question + 1;
+        
+        char *key = sparam;
+        while (1) {
+            char *eq_mark = strchr(key, '=');
+            if (eq_mark == NULL)
+                break;
+            
+            char *value = eq_mark + 1;
+            struct url_param *newparam = malloc(sizeof(struct url_param));
+            newparam->next = param;
+            newparam->key = key;
+            newparam->value = value;
+            param = newparam;
+            
+            char *and_mark = strchr(value, '&');
+            *eq_mark = 0;
+            urldecode(key);
+            if (and_mark)
+                *and_mark = 0;
+            urldecode(value);
+            if (and_mark == NULL)
+                break;
+            key = and_mark + 1;
+        }
+    }
+    
+    
+    //const char *xx = get_param_string(param, "ff", NULL);
+    bool iscalled = call_callback(state, path, param);
+    free_url_params(param);
+    if (iscalled) {
+        return 0;
     }
     
     const char *dot = strrchr(path, '.');
@@ -223,10 +336,8 @@ static int do_read(int fd, struct fd_state *state) {
         const char *endtoken = "\r\n\r\n";
         const char *httpend = strstr(state->read_buf, endtoken);
         if (httpend && httpend < state->read_buf + state->n_read) {
-            //FIXME:DO PARSE HTML
-            printf("%s", state->read_buf);
+            //printf("%s", state->read_buf);
             parseRequest(state);
-            //FIXME END
             
             httpend += strlen(endtoken);
             int remain = state->read_buf + state->n_read - httpend;
@@ -301,7 +412,11 @@ static int do_write(int fd, struct fd_state *state) {
     return status;
 }
 
-void server_select() {
+void server_loop() {
+    
+}
+
+void server_select(int timeout) {
     if (!_isRunning)
         return;
     
@@ -326,8 +441,15 @@ void server_select() {
         }
     }
     
+    struct timeval *pt = NULL;
     struct timeval t = {0};
-    if (select(maxfd+1, &readset, &writeset, &exset, &t) < 0) {
+    if (timeout >= 0) {
+        t.tv_sec = timeout/1000;
+        t.tv_usec = (timeout%1000)*1000;
+        pt = &t;
+    }
+    
+    if (select(maxfd+1, &readset, &writeset, &exset, pt) < 0) {
         perror("select");
         return;
     }
@@ -336,7 +458,6 @@ void server_select() {
         struct sockaddr_storage ss;
         socklen_t slen = sizeof(ss);
         int fd = accept(_listener, (struct sockaddr*)&ss, &slen);
-        printf("accept\n");
         if (fd < 0) {
             perror("accept");
         } else if (fd > FD_SETSIZE) {
@@ -423,18 +544,34 @@ void clear_callback() {
     callback_head = NULL;
 }
 
-bool call_callback(const char *path, const char *param) {
-    assert(path && param);
+bool call_callback(struct fd_state *state, const char *path, const struct url_param *param) {
+    assert(state && path);
     struct callback_elem *elem = callback_head;
     while (elem) {
         if (strcmp(path, elem->path) == 0) {
-            elem->callback(param);
+            struct http_response_body response_body;
+            response_body.buf[0] = 0;
+            response_body.len = 0;
+            elem->callback(param, &response_body);
+            write_response_header(state, response_body.len, "application/json");
+            if (response_body.len > 0)
+                write_to_buf(state, response_body.buf, response_body.len);
             return true;
         }
+        elem = elem->next;
     }
     return false;
 }
 
+void append_to_response(struct http_response_body *body, const char *src) {
+    assert(body && src);
+    int remain = sizeof(body->buf) - body->len;
+    size_t len = strlen(src);
+    if (remain > 0 && len < remain) {
+        strcat(body->buf, src);
+        body->len += len;
+    }
+}
 
 
 
