@@ -17,12 +17,15 @@
 #include <assert.h>
 #include <string.h>
 #include <time.h>
+#include <setjmp.h>
 
 #define FRAME_TIMEOUT (1/60.f)
 static int _listener = 0;
 static struct fd_state *_state[FD_SETSIZE];
 static bool _isRunning = false;
 char _root_dir[512] = {0};
+jmp_buf jump;
+bool is_jump_setted = false;
 
 struct url_param {
     struct url_param *next;
@@ -354,9 +357,7 @@ static int do_read(int fd, struct fd_state *state) {
 
 static int do_write(int fd, struct fd_state *state) {
     assert(state);
-    
     enum Status status = s_ok;
-    
     clock_t t = clock();
     while (1) {
         if (state->pf) {
@@ -408,17 +409,21 @@ static int do_write(int fd, struct fd_state *state) {
             break;
         }
     }
-    
     return status;
 }
 
 void server_loop() {
-    while (_isRunning) {
-		server_select(-1);
-	}
+    while (_isRunning)
+        server_select(-1);
 }
 
 void server_select(int timeout) {
+    if (!is_jump_setted) {
+        is_jump_setted = true;
+        if (setjmp(jump))
+            return;
+    }
+    
     if (!_isRunning)
         return;
     
@@ -502,7 +507,7 @@ void server_stop() {
         }
     }
     clear_callback();
-	exit(0);
+	longjmp(jump, 1);
 }
 
 struct callback_elem {
