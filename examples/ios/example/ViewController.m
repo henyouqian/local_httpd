@@ -10,6 +10,7 @@
 #import "lh_httpd.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+float _rot_speed = 1.f;
 
 // Uniform index.
 enum
@@ -123,6 +124,13 @@ void onTest (const struct url_param *param, struct http_response_body *resb_body
     append_to_response(resb_body, "{\"error\":0}");
 }
 
+void server_path(const struct url_param *param, struct http_response_body* resb_body) {
+    char buf[512];
+	snprintf(buf, sizeof(buf), "{\"path\":\"%s%d\"}", "It's a secret!", rand()%1000);
+	append_to_response(resb_body, buf);
+    _rot_speed = -_rot_speed;
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -139,9 +147,10 @@ void onTest (const struct url_param *param, struct http_response_body *resb_body
     
     [self setupGL];
     
-    //[webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/BootswatchSuperhero.html"]]];
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/m_hero.html"]]];
     
     register_callback("/test", onTest);
+    register_callback("/serverpath", server_path);
 }
 
 - (void)didReceiveMemoryWarning
@@ -232,7 +241,7 @@ void onTest (const struct url_param *param, struct http_response_body *resb_body
     
     _modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
     
-    _rotation += self.timeSinceLastUpdate * 0.5f;
+    _rotation += self.timeSinceLastUpdate * 0.5f * _rot_speed;
     
     server_select(0);
 }
