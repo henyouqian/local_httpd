@@ -7,8 +7,13 @@
 
 #ifndef lh_httpd_h
 #define lh_httpd_h
+
 #include <stdint.h>
 #include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int server_start(unsigned short port, const char* root_dir);
 void server_loop();
@@ -33,5 +38,8 @@ uint64_t get_param_uint64(const struct url_param *param, const char *key, bool *
 float get_param_float(const struct url_param *param, const char *key, bool *error);
 double get_param_double(const struct url_param *param, const char *key, bool *error);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -21,7 +21,7 @@
 #define FRAME_TIMEOUT (1/60.f)
 static int _listener = 0;
 static struct fd_state *_state[FD_SETSIZE];
-static int _isRunning = 0;
+static bool _isRunning = false;
 char _root_dir[512] = {0};
 
 struct url_param {
@@ -164,7 +164,7 @@ int server_start(unsigned short port, const char* root_dir) {
     for (int i = 0; i < FD_SETSIZE; ++i)
         _state[i] = NULL;
     
-    _isRunning = 1;
+    _isRunning = true;
     return 0;
 }
 
@@ -413,7 +413,9 @@ static int do_write(int fd, struct fd_state *state) {
 }
 
 void server_loop() {
-    
+    while (_isRunning) {
+		server_select(-1);
+	}
 }
 
 void server_select(int timeout) {
@@ -488,7 +490,9 @@ void server_select(int timeout) {
 }
 
 void server_stop() {
-    _isRunning = 0;
+	if (!_isRunning)
+		return;
+    _isRunning = false;
     close(_listener);
     for (int i=0; i < FD_SETSIZE; ++i) {
         if (_state[i]) {
@@ -498,6 +502,7 @@ void server_stop() {
         }
     }
     clear_callback();
+	exit(0);
 }
 
 struct callback_elem {
