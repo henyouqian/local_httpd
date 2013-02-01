@@ -16,6 +16,7 @@
       }
     </style>
     <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="colorpicker/css/colorpicker.css" rel="stylesheet">
 
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -78,6 +79,11 @@
         <p><a id="btn_serverpath" class="btn btn-primary btn-large">Server path &raquo;</a></p>
       </div>
 
+		<div id="cp" class="input-append color" data-color="rgb(255, 146, 180)" data-color-format="rgb">
+		  <input type="text" class="span2" value="" >
+		  <span class="add-on"><i style="background-color: rgb(255, 146, 180)"></i></span>
+		</div>
+
       <!-- Example row of columns -->
       <div class="row">
         <div class="span4">
@@ -105,11 +111,13 @@
 
     </div> <!-- /container -->
 
+
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="jquery/jquery-1.9.0.min.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
+	<script src="colorpicker/js/bootstrap-colorpicker.js"></script>
     <script src="hero.js"></script>
   </body>
 </html>

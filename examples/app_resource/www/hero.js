@@ -4,4 +4,8 @@ jQuery(document).ready(function($) {
 			$("#path").text(json.path);
 		});
 	});
+	var bodyStyle = $("body")[0].style;
+	$("#cp").colorpicker().on("changeColor", function(ev){
+		bodyStyle.backgroundColor = ev.color.toHex();
+	});
 });
