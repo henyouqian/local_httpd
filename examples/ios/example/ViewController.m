@@ -11,6 +11,9 @@
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 float _rot_speed = 1.f;
+float bg_r = 0.65f;
+float bg_g = 0.65f;
+float bg_b = 0.65f;
 
 // Uniform index.
 enum
@@ -124,6 +127,18 @@ void server_path(const struct url_param *param, struct http_response_body* resb_
     _rot_speed = -_rot_speed;
 }
 
+void set_bgcolor(const struct url_param *param, struct http_response_body* resb_body) {
+    bool err = false;
+    int r = get_param_int32(param, "r", &err);
+    int g = get_param_int32(param, "g", &err);
+    int b = get_param_int32(param, "b", &err);
+    if (err)
+        return;
+    bg_r = r/255.f;
+    bg_g = g/255.f;
+    bg_b = b/255.f;
+}
+
 - (void)viewDidLoad
 {
     [super viewDidLoad];
@@ -144,6 +159,7 @@ void server_path(const struct url_param *param, struct http_response_body* resb_
     
     register_callback("/stopserver", stop_server);
     register_callback("/serverpath", server_path);
+    register_callback("/setbgcolor", set_bgcolor);
 }
 
 - (void)didReceiveMemoryWarning
@@ -241,7 +257,7 @@ void server_path(const struct url_param *param, struct http_response_body* resb_
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
 {
-    glClearColor(0.65f, 0.65f, 0.65f, 1.0f);
+    glClearColor(bg_r, bg_g, bg_b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glBindVertexArrayOES(_vertexArray);

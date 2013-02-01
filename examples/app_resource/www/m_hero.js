@@ -5,4 +5,11 @@ jQuery(document).ready(function($) {
 			$("#path").text(json.path);
 		});
 	});
+    var bodyStyle = $("body")[0].style;
+    $("#colorpicker").minicolors({
+        inline:true,
+        change:function(hex, opacity){
+            $.getJSON("/setbgcolor", $(this).minicolors("rgbObject"));
+        }
+    });
 });

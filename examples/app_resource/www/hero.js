@@ -6,7 +6,10 @@ jQuery(document).ready(function($) {
 		});
 	});
 	var bodyStyle = $("body")[0].style;
-	$("#cp").colorpicker().on("changeColor", function(ev){
-		bodyStyle.backgroundColor = ev.color.toHex();
-	});
+	$("#colorpicker").minicolors({
+        inline:true,
+        change:function(hex, opacity){
+            bodyStyle.backgroundColor = hex;
+        }
+    });
 });
