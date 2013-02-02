@@ -72,7 +72,7 @@ struct fd_state {
     char read_buf[16384];
     size_t n_read;
     
-    bool writing;
+    int is_writing;
     char write_buf[16384];
     size_t n_written;
     size_t write_upto;
@@ -84,7 +84,7 @@ static struct fd_state* alloc_fd_state(void) {
     if (!state)
         return NULL;
     state->n_read = state->n_written = state->write_upto = 0;
-    state->writing = false;
+    state->is_writing = 0;
     state->pf = NULL;
     return state;
 }
@@ -160,7 +160,7 @@ void free_callback_elem(struct callback_elem *elem) {
     free(elem);
 }
 
-bool call_callback(struct fd_state *state, const char *path, const struct url_param *param) {
+int call_callback(struct fd_state *state, const char *path, const struct url_param *param) {
     assert(state && path);
     struct callback_elem *elem = callback_head;
     while (elem) {
@@ -172,11 +172,11 @@ bool call_callback(struct fd_state *state, const char *path, const struct url_pa
             write_response_header(state, response_body.len, "application/json");
             if (response_body.len > 0)
                 write_to_buf(state, response_body.buf, response_body.len);
-            return true;
+            return 1;
         }
         elem = elem->next;
     }
-    return false;
+    return 0;
 }
 
 static void free_url_params(struct url_param* param){
@@ -230,7 +230,7 @@ static int parseRequest(struct fd_state *state) {
         }
     }
     
-    bool iscalled = call_callback(state, path, param);
+    int iscalled = call_callback(state, path, param);
     free_url_params(param);
     if (iscalled) {
         return 0;
@@ -306,12 +306,12 @@ static int do_read(int fd, struct fd_state *state) {
             parseRequest(state);
             
             httpend += strlen(endtoken);
-            int remain = state->read_buf + state->n_read - httpend;
+            size_t remain = state->read_buf + state->n_read - httpend;
             if (remain > 0) {
                 memmove(state->read_buf, httpend, remain);
             }
             state->n_read = remain;
-            state->writing = true;
+            state->is_writing = 1;
         }
     }
 
@@ -357,7 +357,7 @@ static int do_write(int fd, struct fd_state *state) {
             if (state->n_written == state->write_upto) {
                 state->n_written = state->write_upto = 0;
                 if (state->pf == NULL) {
-                    state->writing = false;
+                    state->is_writing = 0;
                     break;
                 }
             }
@@ -435,7 +435,7 @@ void server_select(int timeout) {
         if (_state[i]) {
             if (i > maxfd)
                 maxfd = i;
-            if (_state[i]->writing) {
+            if (_state[i]->is_writing) {
                 FD_SET(i, &writeset);
             } else {
                 FD_SET(i, &readset);
@@ -474,7 +474,7 @@ void server_select(int timeout) {
             status = do_read(i, _state[i]);
             
         }
-        if (status == s_ok && (FD_ISSET(i, &writeset) || _state[i]->writing)) {
+        if (status == s_ok && (FD_ISSET(i, &writeset) || _state[i]->is_writing)) {
             status = do_write(i, _state[i]);
         }
         if (status == s_error || status == s_disconnect) {
@@ -520,11 +520,11 @@ void clear_callback() {
     callback_head = NULL;
 }
 
-const char* get_param_string(const struct url_param *param, const char *key, bool *error) {
+const char* get_param_string(const struct url_param *param, const char *key, int *error) {
     assert(key);
     if (!param) {
         if (error)
-            *error = true;
+            *error = 1;
         return NULL;
     }
     while (param) {
@@ -533,7 +533,7 @@ const char* get_param_string(const struct url_param *param, const char *key, boo
         }
         param = param->next;
     }
-    *error = true;
+    *error = 1;
     return NULL;
 }
 
@@ -541,38 +541,38 @@ const char* get_param_string(const struct url_param *param, const char *key, boo
     const char* str = get_param_string(param, key, NULL); \
     if (!str) { \
         if (error) \
-            *error = true; \
+            *error = 1; \
         return 0; \
     } \
     char* pEnd = NULL; \
-    type n = func; \
+    type n = (type)func; \
     if ((*str != '\0' && *pEnd == '\0')) \
         return n; \
     if (error) \
-        *error = true; \
+        *error = 1; \
     return 0;
 
-int32_t get_param_int32(const struct url_param *param, const char *key, bool *error) {
+int32_t get_param_int32(const struct url_param *param, const char *key, int *error) {
     _get_param_value(int32_t, strtol(str, &pEnd, 0));
 }
 
-uint32_t get_param_uint32(const struct url_param *param, const char *key, bool *error) {
+uint32_t get_param_uint32(const struct url_param *param, const char *key, int *error) {
     _get_param_value(uint32_t, strtoul(str, &pEnd, 0));
 }
 
-int64_t get_param_int64(const struct url_param *param, const char *key, bool *error) {
+int64_t get_param_int64(const struct url_param *param, const char *key, int *error) {
     _get_param_value(int64_t, strtoll(str, &pEnd, 0));
 }
 
-uint64_t get_param_uint64(const struct url_param *param, const char *key, bool *error) {
+uint64_t get_param_uint64(const struct url_param *param, const char *key, int *error) {
     _get_param_value(uint64_t, strtoull(str, &pEnd, 0));
 }
 
-float get_param_float(const struct url_param *param, const char *key, bool *error) {
+float get_param_float(const struct url_param *param, const char *key, int *error) {
     _get_param_value(float, strtof(str, &pEnd));
 }
 
-double get_param_double(const struct url_param *param, const char *key, bool *error) {
+double get_param_double(const struct url_param *param, const char *key, int *error) {
     _get_param_value(double, strtod(str, &pEnd));
 }
 

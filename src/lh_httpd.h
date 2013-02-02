@@ -24,7 +24,6 @@ THE SOFTWARE.
 #define lh_httpd_h
 
 #include <stdint.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,13 +44,13 @@ void register_callback(const char *path, request_callback cb);
 void clear_callback();
 
 //Param error not set when no error occurred.
-const char* get_param_string(const struct url_param *param, const char *key, bool *error);
-int32_t get_param_int32(const struct url_param *param, const char *key, bool *error);
-uint32_t get_param_uint32(const struct url_param *param, const char *key, bool *error);
-int64_t get_param_int64(const struct url_param *param, const char *key, bool *error);
-uint64_t get_param_uint64(const struct url_param *param, const char *key, bool *error);
-float get_param_float(const struct url_param *param, const char *key, bool *error);
-double get_param_double(const struct url_param *param, const char *key, bool *error);
+const char* get_param_string(const struct url_param *param, const char *key, int *error);
+int32_t get_param_int32(const struct url_param *param, const char *key, int *error);
+uint32_t get_param_uint32(const struct url_param *param, const char *key, int *error);
+int64_t get_param_int64(const struct url_param *param, const char *key, int *error);
+uint64_t get_param_uint64(const struct url_param *param, const char *key, int *error);
+float get_param_float(const struct url_param *param, const char *key, int *error);
+double get_param_double(const struct url_param *param, const char *key, int *error);
 
 #ifdef __cplusplus
 }
