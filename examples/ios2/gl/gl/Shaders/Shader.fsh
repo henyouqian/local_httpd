@@ -1,8 +1,8 @@
 //
 //  Shader.fsh
-//  example
+//  gl
 //
-//  Created by Li Wei on 13-1-30.
+//  Created by Li Wei on 13-2-2.
 //  Copyright (c) 2013年 Li Wei. All rights reserved.
 //
 
