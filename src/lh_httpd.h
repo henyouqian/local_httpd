@@ -34,9 +34,9 @@ void server_loop();
 void server_select(int timeout); //timeout: use millisecond, if<0: block
 void server_stop();
 
-struct url_param;
+struct kv_elem;
 struct http_response_body;
-typedef void (*request_callback) (const struct url_param *param, struct http_response_body* resb_body);
+typedef void (*request_callback) (const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body);
 
 void append_to_response(struct http_response_body *resb_body, const char *content);
 
@@ -44,13 +44,13 @@ void register_callback(const char *path, request_callback cb);
 void clear_callback();
 
 //Param error not set when no error occurred.
-const char* get_param_string(const struct url_param *param, const char *key, int *error);
-int32_t get_param_int32(const struct url_param *param, const char *key, int *error);
-uint32_t get_param_uint32(const struct url_param *param, const char *key, int *error);
-int64_t get_param_int64(const struct url_param *param, const char *key, int *error);
-uint64_t get_param_uint64(const struct url_param *param, const char *key, int *error);
-float get_param_float(const struct url_param *param, const char *key, int *error);
-double get_param_double(const struct url_param *param, const char *key, int *error);
+const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error);
+int32_t get_kv_int32(const struct kv_elem *kvs, const char *key, int *error);
+uint32_t get_kv_uint32(const struct kv_elem *kvs, const char *key, int *error);
+int64_t get_kv_int64(const struct kv_elem *kvs, const char *key, int *error);
+uint64_t get_kv_uint64(const struct kv_elem *kvs, const char *key, int *error);
+float get_kv_float(const struct kv_elem *kvs, const char *key, int *error);
+double get_kv_double(const struct kv_elem *kvs, const char *key, int *error);
 
 #ifdef __cplusplus
 }

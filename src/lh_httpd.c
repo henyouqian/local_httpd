@@ -51,8 +51,8 @@ static enum running_state {
 } rs_state = rs_stopped;
 
 
-struct url_param {
-    struct url_param *next;
+struct kv_elem {
+    struct kv_elem *next;
     const char *key;
     const char *value;
 };
@@ -160,7 +160,74 @@ void free_callback_elem(struct callback_elem *elem) {
     free(elem);
 }
 
-int call_callback(struct fd_state *state, const char *path, const struct url_param *param) {
+static struct kv_elem* parse_url_params(char *sparams) {
+    if (!sparams)
+        return NULL;
+    struct kv_elem *param = NULL;
+    char *key = sparams;
+    while (1) {
+        char *eq_mark = strchr(key, '=');
+        if (eq_mark == NULL)
+            break;
+        char *value = eq_mark + 1;
+        struct kv_elem *newparam = malloc(sizeof(struct kv_elem));
+        newparam->next = param;
+        newparam->key = key;
+        newparam->value = value;
+        param = newparam;
+        
+        char *and_mark = strchr(value, '&');
+        *eq_mark = 0;
+        //urldecode(key);
+        if (and_mark)
+            *and_mark = 0;
+        urldecode(value);
+        if (and_mark == NULL)
+            break;
+        key = and_mark + 1;
+    }
+    return param;
+}
+
+static void free_kvs(struct kv_elem* kv) {
+    while (kv) {
+        struct kv_elem *next = kv->next;
+        free(kv);
+        kv = next;
+    }
+}
+
+struct kv_elem* parse_cookies(char *scookies) {
+    if (!scookies)
+        return NULL;
+    struct kv_elem *kv = NULL;
+    char *key = scookies;
+    while (1) {
+        char *eq_mark = strchr(key, '=');
+        if (eq_mark == NULL)
+            break;
+        char *value = eq_mark + 1;
+        struct kv_elem *newkv = malloc(sizeof(struct kv_elem));
+        newkv->next = kv;
+        newkv->key = key;
+        newkv->value = value;
+        kv = newkv;
+        
+        char *split_mark = strchr(value, ';');
+        *eq_mark = 0;
+        if (split_mark)
+            *split_mark = 0;
+        if (split_mark == NULL)
+            break;
+        key = split_mark + 1;
+        while (*key == ' ')
+            ++key;
+    }
+    
+    return kv;
+}
+
+int call_callback(struct fd_state *state, const char *path, char *sparams, char *scookies) {
     assert(state && path);
     struct callback_elem *elem = callback_head;
     while (elem) {
@@ -168,7 +235,13 @@ int call_callback(struct fd_state *state, const char *path, const struct url_par
             struct http_response_body response_body;
             response_body.buf[0] = 0;
             response_body.len = 0;
-            elem->callback(param, &response_body);
+            
+            struct kv_elem *params = parse_url_params(sparams);
+            struct kv_elem *cookies = parse_cookies(scookies);
+            elem->callback(params, cookies, &response_body);
+            free_kvs(params);
+            free_kvs(cookies);
+            
             write_response_header(state, response_body.len, "application/json");
             if (response_body.len > 0)
                 write_to_buf(state, response_body.buf, response_body.len);
@@ -179,20 +252,15 @@ int call_callback(struct fd_state *state, const char *path, const struct url_par
     return 0;
 }
 
-static void free_url_params(struct url_param* param){
-    while (param) {
-        struct url_param *next = param->next;
-        free(param);
-        param = next;
-    }
-}
-
 static int parseRequest(struct fd_state *state) {
     assert(state && state->read_buf);
     char *path = strchr(state->read_buf, '/');
     if (path == NULL)
         return -1;
     
+    char *scookies = strstr(path, "Cookie: ");
+    if (scookies)
+        scookies += 8;
     char *space = strchr(path, ' ');
     if (space) {
         *space = 0;
@@ -202,36 +270,11 @@ static int parseRequest(struct fd_state *state) {
         *question = 0;
     urldecode(path);
     
-    char *sparam = NULL;
-    struct url_param *param = NULL;
-    if (question) {
-        sparam = question + 1;
-        char *key = sparam;
-        while (1) {
-            char *eq_mark = strchr(key, '=');
-            if (eq_mark == NULL)
-                break;
-            char *value = eq_mark + 1;
-            struct url_param *newparam = malloc(sizeof(struct url_param));
-            newparam->next = param;
-            newparam->key = key;
-            newparam->value = value;
-            param = newparam;
-            
-            char *and_mark = strchr(value, '&');
-            *eq_mark = 0;
-            urldecode(key);
-            if (and_mark)
-                *and_mark = 0;
-            urldecode(value);
-            if (and_mark == NULL)
-                break;
-            key = and_mark + 1;
-        }
-    }
+    char *sparams = NULL;
+    if (question)
+        sparams = question + 1;
     
-    int iscalled = call_callback(state, path, param);
-    free_url_params(param);
+    int iscalled = call_callback(state, path, sparams, scookies);
     if (iscalled) {
         return 0;
     }
@@ -302,7 +345,6 @@ static int do_read(int fd, struct fd_state *state) {
         const char *endtoken = "\r\n\r\n";
         const char *httpend = strstr(state->read_buf, endtoken);
         if (httpend && httpend < state->read_buf + state->n_read) {
-            //printf("%s", state->read_buf);
             parseRequest(state);
             
             httpend += strlen(endtoken);
@@ -520,25 +562,25 @@ void clear_callback() {
     callback_head = NULL;
 }
 
-const char* get_param_string(const struct url_param *param, const char *key, int *error) {
+const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error) {
     assert(key);
-    if (!param) {
+    if (!kvs) {
         if (error)
             *error = 1;
         return NULL;
     }
-    while (param) {
-        if (strcmp(key, param->key) == 0) {
-            return param->value;
+    while (kvs) {
+        if (strcmp(key, kvs->key) == 0) {
+            return kvs->value;
         }
-        param = param->next;
+        kvs = kvs->next;
     }
     *error = 1;
     return NULL;
 }
 
-#define _get_param_value(type, func) \
-    const char* str = get_param_string(param, key, NULL); \
+#define _get_kv_value(type, func) \
+    const char* str = get_kv_string(kvs, key, NULL); \
     if (!str) { \
         if (error) \
             *error = 1; \
@@ -552,28 +594,28 @@ const char* get_param_string(const struct url_param *param, const char *key, int
         *error = 1; \
     return 0;
 
-int32_t get_param_int32(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(int32_t, strtol(str, &pEnd, 0));
+int32_t get_kv_int32(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(int32_t, strtol(str, &pEnd, 0));
 }
 
-uint32_t get_param_uint32(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(uint32_t, strtoul(str, &pEnd, 0));
+uint32_t get_kv_uint32(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(uint32_t, strtoul(str, &pEnd, 0));
 }
 
-int64_t get_param_int64(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(int64_t, strtoll(str, &pEnd, 0));
+int64_t get_kv_int64(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(int64_t, strtoll(str, &pEnd, 0));
 }
 
-uint64_t get_param_uint64(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(uint64_t, strtoull(str, &pEnd, 0));
+uint64_t get_kv_uint64(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(uint64_t, strtoull(str, &pEnd, 0));
 }
 
-float get_param_float(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(float, strtof(str, &pEnd));
+float get_kv_float(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(float, strtof(str, &pEnd));
 }
 
-double get_param_double(const struct url_param *param, const char *key, int *error) {
-    _get_param_value(double, strtod(str, &pEnd));
+double get_kv_double(const struct kv_elem *kvs, const char *key, int *error) {
+    _get_kv_value(double, strtod(str, &pEnd));
 }
 
 

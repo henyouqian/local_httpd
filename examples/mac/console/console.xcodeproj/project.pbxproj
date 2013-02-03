@@ -10,6 +10,7 @@
 		D004A53D16BC63A8001FAF9F /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = D004A53C16BC63A8001FAF9F /* main.c */; };
 		D004A54816BC641A001FAF9F /* lh_httpd.c in Sources */ = {isa = PBXBuildFile; fileRef = D004A54616BC6419001FAF9F /* lh_httpd.c */; };
 		D004A54B16BC66CD001FAF9F /* www in CopyFiles */ = {isa = PBXBuildFile; fileRef = D004A54A16BC66CD001FAF9F /* www */; };
+		D032519316BDB95300B9EE03 /* libiconv.2.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = D032519216BDB95300B9EE03 /* libiconv.2.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -31,6 +32,7 @@
 		D004A54616BC6419001FAF9F /* lh_httpd.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = lh_httpd.c; path = ../../../../src/lh_httpd.c; sourceTree = "<group>"; };
 		D004A54716BC6419001FAF9F /* lh_httpd.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = lh_httpd.h; path = ../../../../src/lh_httpd.h; sourceTree = "<group>"; };
 		D004A54A16BC66CD001FAF9F /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = ../../app_resource/www; sourceTree = "<group>"; };
+		D032519216BDB95300B9EE03 /* libiconv.2.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libiconv.2.dylib; path = usr/lib/libiconv.2.dylib; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D032519316BDB95300B9EE03 /* libiconv.2.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -47,6 +50,7 @@
 		D004A52D16BC63A8001FAF9F = {
 			isa = PBXGroup;
 			children = (
+				D032519216BDB95300B9EE03 /* libiconv.2.dylib */,
 				D004A54A16BC66CD001FAF9F /* www */,
 				D004A53B16BC63A8001FAF9F /* console */,
 				D004A53916BC63A8001FAF9F /* Products */,
@@ -224,6 +228,7 @@
 				D004A54416BC63A8001FAF9F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
