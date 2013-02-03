@@ -116,22 +116,22 @@ GLfloat gCubeVertexData[216] =
     [super dealloc];
 }
 
-void stop_server(const struct url_param *param, struct http_response_body *resb_body) {
+void stop_server(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
     server_stop();
 }
 
-void server_path(const struct url_param *param, struct http_response_body* resb_body) {
+void server_path(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
     char buf[512];
 	snprintf(buf, sizeof(buf), "{\"path\":\"%s%d\"}", "It's a secret!", rand()%1000);
 	append_to_response(resb_body, buf);
     _rot_speed = -_rot_speed;
 }
 
-void set_bgcolor(const struct url_param *param, struct http_response_body* resb_body) {
-    bool err = false;
-    int r = get_param_int32(param, "r", &err);
-    int g = get_param_int32(param, "g", &err);
-    int b = get_param_int32(param, "b", &err);
+void set_bgcolor(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
+    int err = 0;
+    int r = get_kv_int32(params, "r", &err);
+    int g = get_kv_int32(params, "g", &err);
+    int b = get_kv_int32(params, "b", &err);
     if (err)
         return;
     bg_r = r/255.f;
