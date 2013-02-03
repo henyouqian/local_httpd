@@ -1,15 +1,16 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "lh_httpd.h"
 
 const char* g_path = NULL;
 
-void stop_server(const struct url_param *param, struct http_response_body* resb_body) {
+void stop_server(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
 	server_stop();
 }
 
-void server_path(const struct url_param *param, struct http_response_body* resb_body) {
+void server_path(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
 	char buf[512];
-	snprintf(buf, sizeof(buf), "{\"path\":\"%s\"}", g_path);
+	snprintf(buf, sizeof(buf), "{\"path\":\"%d%s\"}", rand()%1000, g_path);
 	append_to_response(resb_body, buf);
 }
 
