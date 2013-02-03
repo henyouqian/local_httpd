@@ -217,8 +217,12 @@ struct kv_elem* parse_cookies(char *scookies) {
         *eq_mark = 0;
         if (split_mark)
             *split_mark = 0;
-        if (split_mark == NULL)
-            break;
+		else {
+			split_mark = strchr(value, '\r');
+			if (split_mark)
+				*split_mark = 0;
+			break;
+		}
         key = split_mark + 1;
         while (*key == ' ')
             ++key;
@@ -252,8 +256,9 @@ int call_callback(struct fd_state *state, const char *path, char *sparams, char 
     return 0;
 }
 
-static int parseRequest(struct fd_state *state) {
+static int parse_request(struct fd_state *state) {
     assert(state && state->read_buf);
+	//printf("%s", state->read_buf);
     char *path = strchr(state->read_buf, '/');
     if (path == NULL)
         return -1;
@@ -345,7 +350,7 @@ static int do_read(int fd, struct fd_state *state) {
         const char *endtoken = "\r\n\r\n";
         const char *httpend = strstr(state->read_buf, endtoken);
         if (httpend && httpend < state->read_buf + state->n_read) {
-            parseRequest(state);
+            parse_request(state);
             
             httpend += strlen(endtoken);
             size_t remain = state->read_buf + state->n_read - httpend;
@@ -477,11 +482,10 @@ void server_select(int timeout) {
         if (_state[i]) {
             if (i > maxfd)
                 maxfd = i;
-            if (_state[i]->is_writing) {
+            if (_state[i]->is_writing)
                 FD_SET(i, &writeset);
-            } else {
+            else
                 FD_SET(i, &readset);
-            }
         }
     }
     struct timeval *pt = NULL;
@@ -512,13 +516,10 @@ void server_select(int timeout) {
         if (i == _listener || _state[i] == NULL)
             continue;
         enum io_tatus status = s_ok;
-        if (FD_ISSET(i, &readset)) {
+        if (FD_ISSET(i, &readset))
             status = do_read(i, _state[i]);
-            
-        }
-        if (status == s_ok && (FD_ISSET(i, &writeset) || _state[i]->is_writing)) {
+        if (status == s_ok && (FD_ISSET(i, &writeset) || _state[i]->is_writing))
             status = do_write(i, _state[i]);
-        }
         if (status == s_error || status == s_disconnect) {
             free_fd_state(_state[i]);
             _state[i] = NULL;
@@ -570,9 +571,8 @@ const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error
         return NULL;
     }
     while (kvs) {
-        if (strcmp(key, kvs->key) == 0) {
+        if (strcmp(key, kvs->key) == 0)
             return kvs->value;
-        }
         kvs = kvs->next;
     }
     *error = 1;
