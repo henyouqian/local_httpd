@@ -41,7 +41,7 @@ char _root_dir[512] = {0};
 static struct callback_elem {
     struct callback_elem *next;
     char *path;
-    request_callback callback;
+    lh_request_callback callback;
 } *callback_head = NULL;;
 
 static enum running_state {
@@ -51,13 +51,13 @@ static enum running_state {
 } rs_state = rs_stopped;
 
 
-struct kv_elem {
-    struct kv_elem *next;
+struct lh_kv_elem {
+    struct lh_kv_elem *next;
     const char *key;
     const char *value;
 };
 
-struct http_response_body {
+struct lh_response_body {
     char buf[1024];
     int len;
 };
@@ -143,7 +143,7 @@ static void write_response_error(struct fd_state *state) {
     write_to_buf(state, msg, strlen(msg));
 }
 
-struct callback_elem *alloc_callback_elem(const char *path, request_callback callback) {
+struct callback_elem *alloc_callback_elem(const char *path, lh_request_callback callback) {
     assert(path && callback);
     struct callback_elem *elem = malloc(sizeof(struct callback_elem));
     elem->next = NULL;
@@ -160,17 +160,17 @@ void free_callback_elem(struct callback_elem *elem) {
     free(elem);
 }
 
-static struct kv_elem* parse_url_params(char *sparams) {
+static struct lh_kv_elem* parse_url_params(char *sparams) {
     if (!sparams)
         return NULL;
-    struct kv_elem *param = NULL;
+    struct lh_kv_elem *param = NULL;
     char *key = sparams;
     while (1) {
         char *eq_mark = strchr(key, '=');
         if (eq_mark == NULL)
             break;
         char *value = eq_mark + 1;
-        struct kv_elem *newparam = malloc(sizeof(struct kv_elem));
+        struct lh_kv_elem *newparam = malloc(sizeof(struct lh_kv_elem));
         newparam->next = param;
         newparam->key = key;
         newparam->value = value;
@@ -189,25 +189,25 @@ static struct kv_elem* parse_url_params(char *sparams) {
     return param;
 }
 
-static void free_kvs(struct kv_elem* kv) {
+static void free_kvs(struct lh_kv_elem* kv) {
     while (kv) {
-        struct kv_elem *next = kv->next;
+        struct lh_kv_elem *next = kv->next;
         free(kv);
         kv = next;
     }
 }
 
-struct kv_elem* parse_cookies(char *scookies) {
+struct lh_kv_elem* parse_cookies(char *scookies) {
     if (!scookies)
         return NULL;
-    struct kv_elem *kv = NULL;
+    struct lh_kv_elem *kv = NULL;
     char *key = scookies;
     while (1) {
         char *eq_mark = strchr(key, '=');
         if (eq_mark == NULL)
             break;
         char *value = eq_mark + 1;
-        struct kv_elem *newkv = malloc(sizeof(struct kv_elem));
+        struct lh_kv_elem *newkv = malloc(sizeof(struct lh_kv_elem));
         newkv->next = kv;
         newkv->key = key;
         newkv->value = value;
@@ -236,12 +236,12 @@ int call_callback(struct fd_state *state, const char *path, char *sparams, char 
     struct callback_elem *elem = callback_head;
     while (elem) {
         if (strcmp(path, elem->path) == 0) {
-            struct http_response_body response_body;
+            struct lh_response_body response_body;
             response_body.buf[0] = 0;
             response_body.len = 0;
             
-            struct kv_elem *params = parse_url_params(sparams);
-            struct kv_elem *cookies = parse_cookies(scookies);
+            struct lh_kv_elem *params = parse_url_params(sparams);
+            struct lh_kv_elem *cookies = parse_cookies(scookies);
             elem->callback(params, cookies, &response_body);
             free_kvs(params);
             free_kvs(cookies);
@@ -418,7 +418,7 @@ static int do_write(int fd, struct fd_state *state) {
 }
 
 //================================================================
-int server_start(unsigned short port, const char* root_dir) {
+int lh_start_server(unsigned short port, const char* root_dir) {
     assert(root_dir);
     strncpy(_root_dir, root_dir, sizeof(_root_dir));
     
@@ -449,12 +449,18 @@ int server_start(unsigned short port, const char* root_dir) {
     return 0;
 }
 
-void server_loop() {
-    while (rs_state == rs_running)
-        server_select(-1);
+void lh_stop() {
+    if (rs_state != rs_running)
+        return;
+    rs_state = rs_stopping;
 }
 
-void server_select(int timeout) {
+void lh_loop() {
+    while (rs_state == rs_running)
+        lh_select(-1);
+}
+
+void lh_select(int timeout) {
     if (rs_state == rs_stopping) {
         rs_state = rs_stopped;
         close(_listener);
@@ -466,7 +472,7 @@ void server_select(int timeout) {
                 close(i);
             }
         }
-        clear_callback();
+        lh_clear_callback();
         return;
     } else if (rs_state == rs_stopped) {
         return;
@@ -528,13 +534,7 @@ void server_select(int timeout) {
     }
 }
 
-void server_stop() {
-    if (rs_state != rs_running)
-        return;
-    rs_state = rs_stopping;
-}
-
-void append_to_response(struct http_response_body *body, const char *src) {
+void lh_append_to_response(struct lh_response_body *body, const char *src) {
     assert(body && src);
     int remain = sizeof(body->buf) - body->len;
     size_t len = strlen(src);
@@ -544,7 +544,7 @@ void append_to_response(struct http_response_body *body, const char *src) {
     }
 }
 
-void register_callback(const char *path, request_callback callback) {
+void lh_register_callback(const char *path, lh_request_callback callback) {
     assert(path && callback);
     struct callback_elem *elem = alloc_callback_elem(path, callback);
     if (callback_head)
@@ -552,7 +552,7 @@ void register_callback(const char *path, request_callback callback) {
     callback_head = elem;
 }
 
-void clear_callback() {
+void lh_clear_callback() {
     struct callback_elem *elem = callback_head;
     struct callback_elem *next;
     while (elem) {
@@ -563,7 +563,7 @@ void clear_callback() {
     callback_head = NULL;
 }
 
-const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error) {
+const char* lh_kv_string(const struct lh_kv_elem *kvs, const char *key, int *error) {
     assert(key);
     if (!kvs) {
         if (error)
@@ -580,7 +580,7 @@ const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error
 }
 
 #define _get_kv_value(type, func) \
-    const char* str = get_kv_string(kvs, key, NULL); \
+    const char* str = lh_kv_string(kvs, key, NULL); \
     if (!str) { \
         if (error) \
             *error = 1; \
@@ -594,27 +594,27 @@ const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error
         *error = 1; \
     return 0;
 
-int32_t get_kv_int32(const struct kv_elem *kvs, const char *key, int *error) {
+int32_t lh_kv_int32(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(int32_t, strtol(str, &pEnd, 0));
 }
 
-uint32_t get_kv_uint32(const struct kv_elem *kvs, const char *key, int *error) {
+uint32_t lh_kv_uint32(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(uint32_t, strtoul(str, &pEnd, 0));
 }
 
-int64_t get_kv_int64(const struct kv_elem *kvs, const char *key, int *error) {
+int64_t lh_kv_int64(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(int64_t, strtoll(str, &pEnd, 0));
 }
 
-uint64_t get_kv_uint64(const struct kv_elem *kvs, const char *key, int *error) {
+uint64_t lh_kv_uint64(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(uint64_t, strtoull(str, &pEnd, 0));
 }
 
-float get_kv_float(const struct kv_elem *kvs, const char *key, int *error) {
+float lh_kv_float(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(float, strtof(str, &pEnd));
 }
 
-double get_kv_double(const struct kv_elem *kvs, const char *key, int *error) {
+double lh_kv_double(const struct lh_kv_elem *kvs, const char *key, int *error) {
     _get_kv_value(double, strtod(str, &pEnd));
 }
 

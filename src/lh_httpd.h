@@ -29,28 +29,28 @@ THE SOFTWARE.
 extern "C" {
 #endif
 
-int server_start(unsigned short port, const char* root_dir);
-void server_loop();
-void server_select(int timeout); //timeout: use millisecond, if<0: block
-void server_stop();
+int lh_start(unsigned short port, const char* root_dir);
+void lh_stop();
+void lh_loop();
+void lh_select(int timeout); //timeout: use millisecond, if<0: block
 
-struct kv_elem;
-struct http_response_body;
-typedef void (*request_callback) (const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body);
+struct lh_kv_elem;
+struct lh_response_body;
+typedef void (*lh_request_callback) (const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body);
 
-void append_to_response(struct http_response_body *resb_body, const char *content);
+void lh_append_to_response(struct lh_response_body *resb_body, const char *content);
 
-void register_callback(const char *path, request_callback cb);
-void clear_callback();
+void lh_register_callback(const char *path, lh_request_callback cb);
+void lh_clear_callback();
 
 //Param error not set when no error occurred.
-const char* get_kv_string(const struct kv_elem *kvs, const char *key, int *error);
-int32_t get_kv_int32(const struct kv_elem *kvs, const char *key, int *error);
-uint32_t get_kv_uint32(const struct kv_elem *kvs, const char *key, int *error);
-int64_t get_kv_int64(const struct kv_elem *kvs, const char *key, int *error);
-uint64_t get_kv_uint64(const struct kv_elem *kvs, const char *key, int *error);
-float get_kv_float(const struct kv_elem *kvs, const char *key, int *error);
-double get_kv_double(const struct kv_elem *kvs, const char *key, int *error);
+const char* lh_kv_string(const struct lh_kv_elem *kvs, const char *key, int *error);
+int32_t lh_kv_int32(const struct lh_kv_elem *kvs, const char *key, int *error);
+uint32_t lh_kv_uint32(const struct lh_kv_elem *kvs, const char *key, int *error);
+int64_t lh_kv_int64(const struct lh_kv_elem *kvs, const char *key, int *error);
+uint64_t lh_kv_uint64(const struct lh_kv_elem *kvs, const char *key, int *error);
+float lh_kv_float(const struct lh_kv_elem *kvs, const char *key, int *error);
+double lh_kv_double(const struct lh_kv_elem *kvs, const char *key, int *error);
 
 #ifdef __cplusplus
 }

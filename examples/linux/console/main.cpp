@@ -4,24 +4,24 @@
 
 const char* g_path = NULL;
 
-void stop_server(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
-	server_stop();
+void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
+	lh_server_stop();
 }
 
-void server_path(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
+void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
 	char buf[512];
 	snprintf(buf, sizeof(buf), "{\"path\":\"%d%s\"}", rand()%1000, g_path);
-	append_to_response(resb_body, buf);
+	lh_append_to_response(resb_body, buf);
 }
 
 int main(int argc, char **argv)
 {
 	g_path = argv[0];
 
-	register_callback("/stopserver", stop_server);
-	register_callback("/serverpath", server_path);
+	lh_register_callback("/stopserver", stop_server);
+	lh_register_callback("/serverpath", server_path);
 	
-	server_start(5555, "../../../app_resource/www");
-	server_loop();
+	lh_start(5555, "../../../app_resource/www");
+	lh_loop();
 	return 0;
 }
