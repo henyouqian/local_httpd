@@ -418,7 +418,7 @@ static int do_write(int fd, struct fd_state *state) {
 }
 
 //================================================================
-int lh_start_server(unsigned short port, const char* root_dir) {
+int lh_start(unsigned short port, const char* root_dir) {
     assert(root_dir);
     strncpy(_root_dir, root_dir, sizeof(_root_dir));
     

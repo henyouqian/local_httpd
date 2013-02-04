@@ -116,22 +116,22 @@ GLfloat gCubeVertexData[216] =
     [super dealloc];
 }
 
-void stop_server(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
-    server_stop();
+void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
+    lh_stop();
 }
 
-void server_path(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
+void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
     char buf[512];
 	snprintf(buf, sizeof(buf), "{\"path\":\"%s%d\"}", "It's a secret!", rand()%1000);
-	append_to_response(resb_body, buf);
+	lh_append_to_response(resb_body, buf);
     _rot_speed = -_rot_speed;
 }
 
-void set_bgcolor(const struct kv_elem *params, const struct kv_elem *cookies, struct http_response_body* resb_body) {
+void set_bgcolor(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
     int err = 0;
-    int r = get_kv_int32(params, "r", &err);
-    int g = get_kv_int32(params, "g", &err);
-    int b = get_kv_int32(params, "b", &err);
+    int r = lh_kv_int32(params, "r", &err);
+    int g = lh_kv_int32(params, "g", &err);
+    int b = lh_kv_int32(params, "b", &err);
     if (err)
         return;
     bg_r = r/255.f;
@@ -157,9 +157,9 @@ void set_bgcolor(const struct kv_elem *params, const struct kv_elem *cookies, st
     
     [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost:5555/m_hero.html"]]];
     
-    register_callback("/stopserver", stop_server);
-    register_callback("/serverpath", server_path);
-    register_callback("/setbgcolor", set_bgcolor);
+    lh_register_callback("/stopserver", stop_server);
+    lh_register_callback("/serverpath", server_path);
+    lh_register_callback("/setbgcolor", set_bgcolor);
 }
 
 - (void)didReceiveMemoryWarning
@@ -252,7 +252,7 @@ void set_bgcolor(const struct kv_elem *params, const struct kv_elem *cookies, st
     
     _rotation += self.timeSinceLastUpdate * 0.5f * _rot_speed;
     
-    server_select(0);
+    lh_select(0);
 }
 
 - (void)glkView:(GLKView *)view drawInRect:(CGRect)rect
