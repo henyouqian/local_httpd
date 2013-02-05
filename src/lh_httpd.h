@@ -38,7 +38,7 @@ struct lh_kv_elem;
 struct lh_response_body;
 typedef void (*lh_request_callback) (const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body);
 
-void lh_append_to_response(struct lh_response_body *resb_body, const char *content);
+void lh_append(struct lh_response_body *resp, const char *content);
 
 void lh_register_callback(const char *path, lh_request_callback cb);
 void lh_clear_callback();

@@ -93,6 +93,8 @@ static void free_fd_state(struct fd_state *state) {
     if (state->pf)
         fclose(state->pf);
     free(state);
+	static int n = 0;
+	printf("free:%d\n", ++n);
 }
 
 void urldecode(char *p) {
@@ -509,6 +511,8 @@ void lh_select(int timeout) {
         struct sockaddr_storage ss;
         socklen_t slen = sizeof(ss);
         int fd = accept(_listener, (struct sockaddr*)&ss, &slen);
+		static int na = 0;
+		printf("accept:%d\n", ++na);
         if (fd < 0) {
             perror("accept");
         } else if (fd > FD_SETSIZE) {
@@ -534,8 +538,9 @@ void lh_select(int timeout) {
     }
 }
 
-void lh_append_to_response(struct lh_response_body *body, const char *src) {
-    assert(body && src);
+void lh_append(struct lh_response_body *body, const char *src) {
+    if (!body || !src)
+		return;
     int remain = sizeof(body->buf) - body->len;
     size_t len = strlen(src);
     if (remain > 0 && len < remain) {
@@ -571,8 +576,11 @@ const char* lh_kv_string(const struct lh_kv_elem *kvs, const char *key, int *err
         return NULL;
     }
     while (kvs) {
-        if (strcmp(key, kvs->key) == 0)
+        if (strcmp(key, kvs->key) == 0) {
+			if (!kvs->value || kvs->value[0] == 0)
+				*error = 1;
             return kvs->value;
+		}
         kvs = kvs->next;
     }
     *error = 1;
