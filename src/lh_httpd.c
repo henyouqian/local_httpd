@@ -131,7 +131,7 @@ static int write_to_buf(struct fd_state *state, const char* src, size_t len) {
     return 0;
 }
 
-static int write_response_header(struct fd_state *state, const char* mime, int body_len, const char* user_header) {
+static int write_response_header(struct fd_state *state, const char* mime, size_t body_len, const char* user_header) {
     assert(state && user_header && mime);
     char buf[HEADER_BUF_SIZE] = {0};
     
@@ -551,7 +551,7 @@ void lh_select(int timeout) {
 int lh_append_header(struct lh_response *resp, const char *key, const char* value) {
 	if (!resp || !key || !value)
 		return -1;
-	int remain = sizeof(resp->header) - resp->header_len;
+	size_t remain = sizeof(resp->header) - resp->header_len;
 	size_t len = strlen(key) + strlen(value) + 4;
 	if (len >= remain)
 		return -1;
@@ -566,7 +566,7 @@ int lh_append_header(struct lh_response *resp, const char *key, const char* valu
 int lh_append_body(struct lh_response *resp, const char *src) {
 	if (!resp || !src)
 		return -1;
-    int remain = sizeof(resp->body) - resp->body_len;
+    size_t remain = sizeof(resp->body) - resp->body_len;
     size_t len = strlen(src);
 	if (len >= remain)
 		return -1;
