@@ -4,14 +4,14 @@
 
 const char* g_path = NULL;
 
-void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resp) {
+void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp) {
 	lh_stop();
 }
 
-void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resp) {
+void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp) {
 	char buf[512];
 	snprintf(buf, sizeof(buf), "{\"path\":\"%d%s\"}", rand()%1000, g_path);
-	lh_append(resp, buf);
+	lh_append_body(resp, buf);
 }
 
 int main(int argc, char **argv)

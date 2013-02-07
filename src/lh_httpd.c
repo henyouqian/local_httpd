@@ -37,6 +37,10 @@ THE SOFTWARE.
 static int _listener = 0;
 static struct fd_state *_state[FD_SETSIZE];
 char _root_dir[512] = {0};
+#define HEADER_BUF_SIZE 2048
+#define BODY_BUF_SIZE 2048
+#define READ_BUF_SIZE 16384
+#define WRITE_BUF_SIZE 16384
 
 static struct callback_elem {
     struct callback_elem *next;
@@ -57,9 +61,11 @@ struct lh_kv_elem {
     const char *value;
 };
 
-struct lh_response_body {
-    char buf[1024];
-    int len;
+struct lh_response {
+	char header[HEADER_BUF_SIZE];
+	size_t header_len;
+    char body[BODY_BUF_SIZE];
+    size_t body_len;
 };
 
 enum io_tatus{
@@ -125,18 +131,18 @@ static int write_to_buf(struct fd_state *state, const char* src, size_t len) {
     return 0;
 }
 
-static int write_response_header(struct fd_state *state, size_t content_len, const char* mime) {
-    assert(state && mime);
-    char buf[512] = {0};
+static int write_response_header(struct fd_state *state, const char* mime, int body_len, const char* user_header) {
+    assert(state && user_header && mime);
+    char buf[HEADER_BUF_SIZE] = {0};
     
     const char* fmt =
         "HTTP/1.1 200 OK\r\n" \
         "Content-Type: %s\r\n" \
-        "Content-Length: %u\r\n\r\n";
+        "Content-Length: %u\r\n" \
+		"%s\r\n";
     
-    snprintf(buf, sizeof(buf), fmt, mime, content_len);
+    snprintf(buf, sizeof(buf), fmt, mime, body_len, user_header);
     write_to_buf(state, buf, strlen(buf));
-    
     return 0;
 }
 
@@ -238,19 +244,23 @@ int call_callback(struct fd_state *state, const char *path, char *sparams, char 
     struct callback_elem *elem = callback_head;
     while (elem) {
         if (strcmp(path, elem->path) == 0) {
-            struct lh_response_body response_body;
-            response_body.buf[0] = 0;
-            response_body.len = 0;
+            struct lh_response response;
+            response.header[0] = 0;
+            response.header_len = 0;
+			response.body[0] = 0;
+			response.body_len = 0;
             
             struct lh_kv_elem *params = parse_url_params(sparams);
             struct lh_kv_elem *cookies = parse_cookies(scookies);
-            elem->callback(params, cookies, &response_body);
+            elem->callback(params, cookies, &response);
             free_kvs(params);
             free_kvs(cookies);
             
-            write_response_header(state, response_body.len, "application/json");
-            if (response_body.len > 0)
-                write_to_buf(state, response_body.buf, response_body.len);
+            write_response_header(state, "application/json", response.body_len, response.header);
+			if (response.header_len > 0)
+				write_to_buf(state, response.header, response.header_len);
+            if (response.body_len > 0)
+                write_to_buf(state, response.body, response.body_len);
             return 1;
         }
         elem = elem->next;
@@ -308,7 +318,7 @@ static int parse_request(struct fd_state *state) {
         state->pf = fopen(abspath, "r");
         if (state->pf) {
             fseek(state->pf, 0, SEEK_END);
-            write_response_header(state, ftell(state->pf), mime);
+            write_response_header(state, mime, ftell(state->pf), "");
             rewind(state->pf);
         } else {
             write_response_error(state);
@@ -538,15 +548,31 @@ void lh_select(int timeout) {
     }
 }
 
-void lh_append(struct lh_response_body *body, const char *src) {
-    if (!body || !src)
-		return;
-    int remain = sizeof(body->buf) - body->len;
+int lh_append_header(struct lh_response *resp, const char *key, const char* value) {
+	if (!resp || !key || !value)
+		return -1;
+	int remain = sizeof(resp->header) - resp->header_len;
+	size_t len = strlen(key) + strlen(value) + 4;
+	if (len >= remain)
+		return -1;
+	strcat(resp->header, key);
+	strcat(resp->header, ": ");
+	strcat(resp->header, value);
+	strcat(resp->header, "\r\n");
+	resp += len;
+	return 0;
+}
+
+int lh_append_body(struct lh_response *resp, const char *src) {
+	if (!resp || !src)
+		return -1;
+    int remain = sizeof(resp->body) - resp->body_len;
     size_t len = strlen(src);
-    if (remain > 0 && len < remain) {
-        strcat(body->buf, src);
-        body->len += len;
-    }
+	if (len >= remain)
+		return -1;
+    strcat(resp->body, src);
+	resp->body_len += len;
+	return 0;
 }
 
 void lh_register_callback(const char *path, lh_request_callback callback) {

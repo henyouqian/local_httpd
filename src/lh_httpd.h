@@ -35,10 +35,11 @@ void lh_loop();
 void lh_select(int timeout); //timeout: use millisecond, if<0: block
 
 struct lh_kv_elem;
-struct lh_response_body;
-typedef void (*lh_request_callback) (const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body);
+struct lh_response;
+typedef void (*lh_request_callback) (const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp);
 
-void lh_append(struct lh_response_body *resp, const char *content);
+int lh_append_header(struct lh_response *resp, const char *key, const char* value);
+int lh_append_body(struct lh_response *resp, const char *content);
 
 void lh_register_callback(const char *path, lh_request_callback cb);
 void lh_clear_callback();
