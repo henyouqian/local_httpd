@@ -116,18 +116,18 @@ GLfloat gCubeVertexData[216] =
     [super dealloc];
 }
 
-void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
+void stop_server(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp) {
     lh_stop();
 }
 
-void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
+void server_path(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp) {
     char buf[512];
 	snprintf(buf, sizeof(buf), "{\"path\":\"%s%d\"}", "It's a secret!", rand()%1000);
-	lh_append_to_response(resb_body, buf);
+	lh_append_body(resp, buf);
     _rot_speed = -_rot_speed;
 }
 
-void set_bgcolor(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response_body* resb_body) {
+void set_bgcolor(const struct lh_kv_elem *params, const struct lh_kv_elem *cookies, struct lh_response* resp) {
     int err = 0;
     int r = lh_kv_int32(params, "r", &err);
     int g = lh_kv_int32(params, "g", &err);
