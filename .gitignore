@@ -22,3 +22,4 @@
 *.o.d
 *.DS_Store
 *~
+*.workspace.*
