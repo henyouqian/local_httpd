@@ -31,6 +31,7 @@ extern "C" {
 
 int lh_start(unsigned short port, const char* root_dir);
 void lh_stop();
+void lh_stop_delay(); //call this function in lh_select();
 void lh_loop();
 void lh_select(int timeout); //timeout: use millisecond, if<0: block
 

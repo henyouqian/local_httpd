@@ -462,10 +462,30 @@ int lh_start(unsigned short port, const char* root_dir) {
     return 0;
 }
 
+static void lh_cleanup() {
+	rs_state = rs_stopped;
+	close(_listener);
+	_listener = 0;
+	for (int i=0; i < FD_SETSIZE; ++i) {
+		if (_state[i]) {
+			free_fd_state(_state[i]);
+			_state[i] = NULL;
+			close(i);
+		}
+	}
+	lh_clear_callback();
+}
+
 void lh_stop() {
     if (rs_state != rs_running)
         return;
-    rs_state = rs_stopping;
+	lh_cleanup();
+}
+
+void lh_stop_delay() {
+	if (rs_state != rs_running)
+        return;
+	rs_state = rs_stopping;
 }
 
 void lh_loop() {
@@ -475,17 +495,7 @@ void lh_loop() {
 
 void lh_select(int timeout) {
     if (rs_state == rs_stopping) {
-        rs_state = rs_stopped;
-        close(_listener);
-        _listener = 0;
-        for (int i=0; i < FD_SETSIZE; ++i) {
-            if (_state[i]) {
-                free_fd_state(_state[i]);
-                _state[i] = NULL;
-                close(i);
-            }
-        }
-        lh_clear_callback();
+        lh_cleanup();
         return;
     } else if (rs_state == rs_stopped) {
         return;
