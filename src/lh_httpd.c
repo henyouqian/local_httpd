@@ -28,6 +28,7 @@ THE SOFTWARE.
 #include <fcntl.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <errno.h>
 #include <assert.h>
 #include <string.h>
@@ -549,8 +550,7 @@ void lh_select(int timeout) {
 }
 
 int lh_append_header(struct lh_response *resp, const char *key, const char* value) {
-	if (!resp || !key || !value)
-		return -1;
+	assert(resp && key && value);
 	size_t remain = sizeof(resp->header) - resp->header_len;
 	size_t len = strlen(key) + strlen(value) + 4;
 	if (len >= remain)
@@ -564,8 +564,7 @@ int lh_append_header(struct lh_response *resp, const char *key, const char* valu
 }
 
 int lh_append_body(struct lh_response *resp, const char *src) {
-	if (!resp || !src)
-		return -1;
+	assert(resp && src);
     size_t remain = sizeof(resp->body) - resp->body_len;
     size_t len = strlen(src);
 	if (len >= remain)
@@ -573,6 +572,18 @@ int lh_append_body(struct lh_response *resp, const char *src) {
     strcat(resp->body, src);
 	resp->body_len += len;
 	return 0;
+}
+
+int lh_appendf_body(struct lh_response *resp, const char *fmt, ...) {
+	assert(resp && fmt);
+	char buf[BODY_BUF_SIZE];
+	va_list ap;
+    va_start(ap, fmt);
+	int n = vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+	if (n < 0)
+		return -1;
+    return lh_append_body(resp, buf);
 }
 
 void lh_register_callback(const char *path, lh_request_callback callback) {

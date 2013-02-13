@@ -40,6 +40,7 @@ typedef void (*lh_request_callback) (const struct lh_kv_elem *params, const stru
 
 int lh_append_header(struct lh_response *resp, const char *key, const char* value);
 int lh_append_body(struct lh_response *resp, const char *content);
+int lh_appendf_body(struct lh_response *resp, const char *fmt, ...);
 
 void lh_register_callback(const char *path, lh_request_callback cb);
 void lh_clear_callback();
