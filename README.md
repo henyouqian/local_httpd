@@ -1,6 +1,8 @@
 local_httpd
 ===========
-Micro cross-platform HTTP server running at localhost.
+A Micro cross-platform HTTP server running at localhost. It serves static files simply by setting a root directory and support dynamic queries via callback mechanism.  
+  
+This is a decent solution for bridging web view and native C/C++ code. So we can pack client and server together into one application.
 
 ##Sample code for standalone
 ```c
