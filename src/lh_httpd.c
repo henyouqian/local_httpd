@@ -624,7 +624,7 @@ const char* lh_kv_string(const struct lh_kv_elem *kvs, const char *key, int *err
     }
     while (kvs) {
         if (strcmp(key, kvs->key) == 0) {
-			if (!kvs->value || kvs->value[0] == 0)
+			if (error && !kvs->value)
 				*error = 1;
             return kvs->value;
 		}
